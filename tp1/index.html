@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Captcha</title>
+    <style>
+        /* Estética de captcha viejo */
+        body {
+            background-color: #e5cc5b; 
+            margin: 0 20px; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace; 
+            color: black;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .player-container {
+            background-color: #f4e398;
+            border: 3px solid black;
+            padding: 20px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 8px 8px 0px black; 
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            text-decoration: underline;
+        }
+
+        header p {
+            font-size: 1rem;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+        }
+
+        header p:last-of-type {
+            margin-bottom: 20px;
+            border-bottom: 2px dashed black;
+            padding-bottom: 10px;
+        }
+
+        main {
+            margin: 20px 0;
+        }
+
+        .album-cover {
+            width: 160px;
+            height: 160px;
+            background-color: #ccc;
+            border: 3px solid black;
+            margin: 0 auto 20px auto;
+            object-fit: cover;
+            display: block;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+        }
+
+        .anagram-container {
+            display: flex;
+            flex-wrap: nowrap; /* Mantiene todo en una sola línea */
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto; /* Permite scroll horizontal si la palabra es muy larga */
+            padding-bottom: 5px; 
+        }
+
+        .letter-box {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            background: #fff;
+            box-shadow: 3px 3px 0px black;
+            border: 2px solid black;
+            transition: transform 0.1s;
+            flex-shrink: 0; /* Evita que las cajas se aplasten */
+        }
+
+        .letter-box:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px black;
+        }
+
+        .correct {
+            color: #008000; 
+            border-color: #008000;
+            background-color: #e6ffe6;
+        }
+
+        .incorrect {
+            color: #cc0000; 
+            border-color: #cc0000;
+            background-color: #ffe6e6;
+        }
+
+        .selected {
+            background-color: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 5px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            font-weight: bold;
+            background-color: #e5cc5b;
+            border: 3px solid black;
+            color: black;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0px black;
+            transition: all 0.1s;
+        }
+
+        button:disabled {
+            background-color: #d3d3d3;
+            color: #888;
+            border-color: #888;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: translate(4px, 4px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translate(4px, 4px);
+            box-shadow: 0px 0px 0px black;
+        }
+
+        .instructions {
+            font-size: 0.8rem;
+            font-style: italic;
+            margin-top: 10px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-container">
+        <header>
+            <h1>Reproductor de Musica</h1>
+            <p id="current-song-label">Actual: Cargando...</p>
+            <p id="next-song-label">Siguiente: Cargando...</p>
+        </header>
+
+        <main>
+            <img id="cover" class="album-cover" src="" alt="Portada de la canción">
+            <div id="anagram" class="anagram-container"></div>
+            <span class="instructions">Arrastra o toca dos letras para intercambiarlas y desbloquear los botones.</span>
+        </main>
+
+        <footer>
+            <button id="btn-prev" disabled>Anterior</button>
+            <button id="btn-play" disabled>Play/Stop</button>
+            <button id="btn-next" disabled>Siguiente</button>
+        </footer>
+    </div>
+
+    <script>
+        const playlist = [
+            { 
+                title: "la cancion", 
+                cover: "https://picsum.photos/seed/lacancion/200" 
+            },
+            { 
+                title: "el cantante", 
+                cover: "https://picsum.photos/seed/elcantante/200"
+            }
+        ];
+
+        let currentIndex = 0;
+        let targetWord = "";
+        let scrambledArray = [];
+        
+        let selectedIndex = null; 
+        let draggedIndex = null;  
+
+        const anagramContainer = document.getElementById('anagram');
+        const currentSongLabel = document.getElementById('current-song-label');
+        const nextSongLabel = document.getElementById('next-song-label');
+        const coverImg = document.getElementById('cover');
+        const buttons = document.querySelectorAll('footer button');
+
+        function loadSong() {
+            const currentSong = playlist[currentIndex];
+            const nextSong = playlist[(currentIndex + 1) % playlist.length];
+
+            currentSongLabel.textContent = `Actual: ${currentSong.title}`;
+            nextSongLabel.textContent = `Siguiente: ${nextSong.title}`;
+            coverImg.src = currentSong.cover;
+            
+            targetWord = currentSong.title.replace(/\s+/g, '').toUpperCase();
+            scrambleWord();
+            renderAnagram();
+        }
+
+        function scrambleWord() {
+            let arr = targetWord.split('');
+            do {
+                arr.sort(() => Math.random() - 0.5);
+            } while (arr.join('') === targetWord && targetWord.length > 1);
+            scrambledArray = arr;
+        }
+
+        function renderAnagram() {
+            anagramContainer.innerHTML = '';
+            let isSolved = true;
+
+            scrambledArray.forEach((char, index) => {
+                const box = document.createElement('div');
+                box.className = 'letter-box';
+                box.textContent = char;
+                box.draggable = true;
+
+                if (char === targetWord[index]) {
+                    box.classList.add('correct');
+                } else {
+                    box.classList.add('incorrect');
+                    isSolved = false; 
+                }
+
+                if (selectedIndex === index) {
+                    box.classList.add('selected');
+                }
+
+                box.addEventListener('dragstart', (e) => {
+                    draggedIndex = index;
+                    selectedIndex = null; 
+                });
+
+                box.addEventListener('dragover', (e) => {
+                    e.preventDefault(); 
+                });
+
+                box.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (draggedIndex !== null && draggedIndex !== index) {
+                        swapLetters(draggedIndex, index);
+                    }
+                });
+
+                box.addEventListener('click', () => {
+                    if (selectedIndex === null) {
+                        selectedIndex = index;
+                        renderAnagram();
+                    } else {
+                        if (selectedIndex === index) {
+                            selectedIndex = null;
+                            renderAnagram();
+                        } else {
+                            // Guardamos el primer índice y limpiamos la selección ANTES de intercambiar
+                            let firstIndex = selectedIndex;
+                            selectedIndex = null; 
+                            swapLetters(firstIndex, index);
+                        }
+                    }
+                });
+
+                anagramContainer.appendChild(box);
+            });
+
+            updateButtons(isSolved);
+        }
+
+        function swapLetters(indexA, indexB) {
+            const temp = scrambledArray[indexA];
+            scrambledArray[indexA] = scrambledArray[indexB];
+            scrambledArray[indexB] = temp;
+            renderAnagram();
+        }
+
+        function updateButtons(isSolved) {
+            buttons.forEach(btn => {
+                btn.disabled = !isSolved;
+            });
+        }
+
+        document.getElementById('btn-next').addEventListener('click', () => changeSong(1));
+        document.getElementById('btn-prev').addEventListener('click', () => changeSong(-1));
+        document.getElementById('btn-play').addEventListener('click', () => {
+            changeSong(1); 
+        });
+
+        function changeSong(direction) {
+            currentIndex = (currentIndex + direction + playlist.length) % playlist.length;
+            selectedIndex = null;
+            draggedIndex = null;
+            loadSong(); 
+        }
+
+        loadSong();
+    </script>
+</body>
+</html>
