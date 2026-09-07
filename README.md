@@ -1,4 +1,4 @@
-# Orozco Suárez, Duvan Steven (Cambios)
+# Orozco Suárez, Duvan Steven
 
 Repositorio del curso Introducción a la ingeniería de software asistida por Inteligencia Artificial.
 
