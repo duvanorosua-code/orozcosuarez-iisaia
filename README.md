@@ -8,7 +8,7 @@ La carpeta `tp1/` viene con una entrega resuelta adentro, para que veas hasta d√
 
 | Entrega | Carpeta | Estado |
 |---|---|---|
-| TP 1 | `tp1/` | ejemplo resuelto |
+| [TP 1](./tp1/) | `tp1/` | ejemplo resuelto |
 | TP 2 | `tp2/` | en blanco |
 | Trabajo Pr√°ctico Final | `tp-final/` | en blanco |
 
