@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101a2b">
+    <meta name="description" content="Comparador de estrategias históricas de inversión de QUANTLAB.">
+    <title>QUANTLAB · Comparador de estrategias</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="QUANTLAB, inicio">
+          <span class="brand-mark" aria-hidden="true">Q</span>
+          <span class="brand-name">QUANT<span>LAB</span></span>
+        </a>
+        <div class="topbar-meta">
+          <span class="environment-dot" aria-hidden="true"></span>
+          <span id="mode-indicator-label">Análisis histórico</span>
+        </div>
+      </header>
+
+      <main id="inicio" class="page-content">
+        <section class="page-intro" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">INVESTIGACIÓN DE ESTRATEGIAS</p>
+            <h1 id="page-title">Compara tus estrategias</h1>
+            <p class="intro-copy">Evalúa Buy &amp; Hold y el cruce de medias móviles bajo el mismo capital, período y costo.</p>
+          </div>
+          <div class="market-pill" aria-live="polite" aria-label="Fuente de datos seleccionada">
+            <span class="market-pulse"></span>
+            <span id="source-indicator-main">Dataset</span>
+            <span class="pill-divider"></span>
+            <span id="source-indicator-detail">Consultando catálogo…</span>
+            <span id="source-indicator-scenario" class="source-indicator-scenario" hidden></span>
+          </div>
+        </section>
+
+        <section class="workspace" aria-label="Configuración y resultados de la comparación">
+          <aside class="config-panel panel" aria-labelledby="config-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">PARÁMETROS</p>
+                <h2 id="config-title">Configuración</h2>
+              </div>
+              <span class="step-number">01</span>
+            </div>
+
+            <form id="comparison-form" novalidate>
+              <label class="field-label" for="analysis-mode">Modo de análisis</label>
+              <div class="select-wrap">
+                <select id="analysis-mode" name="analysis_mode">
+                  <option value="historical">Análisis histórico</option>
+                  <option value="experimental">Comparación experimental</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </div>
+
+              <label id="dataset-select-label" class="field-label" for="dataset-id">ETF</label>
+              <div class="select-wrap">
+                <select id="dataset-id" name="dataset_id" required>
+                  <option value="">Cargando catálogo…</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">⌄</span>
+              </div>
+              <div id="dataset-catalog-info" class="dataset-catalog-info" aria-live="polite" data-historical-only>
+                <p><span>Activo</span><strong id="dataset-instrument">—</strong></p>
+                <p><span>Exposición</span><strong id="dataset-exposure">—</strong></p>
+                <p><span>Estado</span><strong id="dataset-validation-status">Consultando catálogo…</strong></p>
+                <p><span>Período</span><strong id="dataset-available-period">—</strong></p>
+                <p><span>Capacidades</span><strong id="dataset-capabilities">—</strong></p>
+                <p id="dataset-validation-note"></p>
+              </div>
+
+              <div data-experimental-only hidden>
+                <label class="field-label" for="synthetic-scenario">Escenario sintético</label>
+                <div class="select-wrap">
+                  <select id="synthetic-scenario" name="scenario">
+                    <option value="uptrend">Tendencia alcista</option>
+                    <option value="sideways">Mercado lateral</option>
+                    <option value="high_volatility">Alta volatilidad</option>
+                  </select>
+                  <span class="select-chevron" aria-hidden="true">⌄</span>
+                </div>
+                <label class="field-label" for="session-count">Sesiones evaluadas</label>
+                <input id="session-count" name="session_count" type="number" min="2" max="2000" step="1" value="252" required>
+              </div>
+
+              <label class="field-label" for="initial-capital">Capital inicial</label>
+              <div class="input-with-prefix">
+                <span aria-hidden="true">$</span>
+                <input id="initial-capital" name="initial_capital" type="number" min="0.01" step="any" value="1000000" required>
+              </div>
+
+              <div class="field-row" data-historical-only>
+                <div>
+                  <label class="field-label" for="evaluation-start">Fecha inicial</label>
+                  <input id="evaluation-start" name="evaluation_start" type="date" value="2020-03-18" required>
+                </div>
+                <div>
+                  <label class="field-label" for="evaluation-end">Fecha final</label>
+                  <input id="evaluation-end" name="evaluation_end" type="date" value="2024-12-31" required>
+                </div>
+              </div>
+              <p class="field-hint" data-historical-only>La fecha final es inclusiva. El período requiere calentamiento previo para la SMA.</p>
+
+              <div class="field-row compact-row">
+                <div>
+                  <label class="field-label" for="transaction-cost">Comisión</label>
+                  <div class="input-with-suffix">
+                    <input id="transaction-cost" name="transaction_cost_rate" type="number" min="0" max="99.99" step="0.01" value="0.1" required>
+                    <span>%</span>
+                  </div>
+                </div>
+                <div class="sma-fields">
+                  <label class="field-label" for="short-window">Ventanas SMA</label>
+                  <div class="window-inputs">
+                    <input id="short-window" name="short_window" type="number" min="1" step="1" value="20" aria-label="Ventana corta SMA" required>
+                    <span aria-hidden="true">/</span>
+                    <input id="long-window" name="long_window" type="number" min="2" step="1" value="50" aria-label="Ventana larga SMA" required>
+                  </div>
+                </div>
+              </div>
+              <p id="form-error" class="form-error" role="alert" hidden></p>
+
+              <button id="run-button" class="primary-button" type="submit">
+                <span class="button-label">Ejecutar comparación</span>
+                <span class="button-arrow" aria-hidden="true">→</span>
+              </button>
+            </form>
+
+            <div class="model-note">
+              <span class="note-icon" aria-hidden="true">i</span>
+              <p>Las señales SMA se ejecutan en la apertura siguiente. Los eventos corporativos no procesados bloquean la simulación.</p>
+            </div>
+          </aside>
+
+          <div class="results-column">
+            <section class="status-panel panel" aria-live="polite" aria-atomic="true">
+              <div id="connection-indicator" class="connection-indicator idle" aria-hidden="true"><span></span></div>
+              <div class="status-copy">
+                <p id="status-title" class="status-title">Listo para comparar</p>
+                <p id="status-message" class="status-message">Configura el período y ejecuta la comparación para consultar resultados.</p>
+              </div>
+              <span id="status-tag" class="status-tag">EN ESPERA</span>
+            </section>
+
+            <section id="historical-summary" class="historical-summary panel" aria-labelledby="historical-summary-title">
+              <div class="section-heading">
+                <div><p class="eyebrow">DATOS DESCRIPTIVOS</p><h2 id="historical-summary-title">Análisis descriptivo</h2></div>
+                <span id="summary-status" class="summary-status" role="status">Consultando dataset…</span>
+              </div>
+              <p id="summary-error" class="summary-error" role="alert" hidden></p>
+              <p id="summary-period-note" class="summary-period-note" hidden></p>
+              <div id="summary-values" class="summary-grid" hidden>
+                <article><span>Sesiones</span><strong id="summary-sessions">—</strong><small id="summary-dates">—</small></article>
+                <article><span>Precio Close</span><strong id="summary-prices">—</strong><small>Inicial → final · USD</small></article>
+                <article><span>Variación del precio</span><strong id="summary-change">—</strong><small>Close inicial a final</small></article>
+                <article><span>Volatilidad anualizada</span><strong id="summary-volatility">—</strong><small>Rendimientos diarios Close</small></article>
+                <article><span>Máximo drawdown</span><strong id="summary-drawdown">—</strong><small>Serie de precios Close</small></article>
+                <article><span>Eventos corporativos</span><strong id="summary-events">—</strong><small>Dividendos · splits</small></article>
+              </div>
+              <p id="summary-unavailable" class="summary-unavailable" hidden></p>
+              <p class="summary-disclaimer">Estas estadísticas describen el comportamiento histórico del precio. No representan la rentabilidad total del ETF ni los resultados de una estrategia de inversión.</p>
+            </section>
+
+            <section id="historical-price-section" class="historical-price-section panel" data-historical-only aria-labelledby="historical-price-title">
+              <div class="section-heading historical-price-heading">
+                <div><p class="eyebrow">SERIE HISTÓRICA</p><h2 id="historical-price-title">Precio de cierre</h2></div>
+                <label class="price-period-control" for="historical-price-period">
+                  <span>Período</span>
+                  <select id="historical-price-period" aria-label="Período del gráfico de precios">
+                    <option value="3m">3 meses</option>
+                    <option value="6m">6 meses</option>
+                    <option value="1y">1 año</option>
+                    <option value="all" selected>Período completo</option>
+                  </select>
+                </label>
+              </div>
+              <p id="historical-price-status" class="historical-price-status" role="status" aria-live="polite">Selecciona un activo con análisis descriptivo disponible.</p>
+              <div class="historical-price-chart-wrap">
+                <canvas id="historical-price-chart" role="img" aria-label="Gráfico descriptivo del precio de cierre frente a fecha" hidden></canvas>
+              </div>
+              <p class="historical-price-disclaimer">El gráfico muestra precios históricos de cierre. No representa la rentabilidad total de la inversión ni el resultado de una estrategia.</p>
+            </section>
+
+            <div id="error-panel" class="alert-panel error-panel" role="alert" hidden>
+              <span class="alert-symbol" aria-hidden="true">!</span>
+              <div><h2 id="error-title">No se pudo completar la comparación</h2><p id="error-message"></p></div>
+            </div>
+            <section id="dataset-analysis" class="alert-panel warning-panel dataset-analysis" role="status" aria-labelledby="analysis-title" hidden>
+              <span class="alert-symbol" aria-hidden="true">i</span>
+              <div>
+                <h2 id="analysis-title">Análisis del dataset</h2>
+                <p id="analysis-message"></p>
+                <ul id="analysis-details"></ul>
+              </div>
+            </section>
+            <div id="warning-panel" class="alert-panel warning-panel" role="status" hidden>
+              <span class="alert-symbol" aria-hidden="true">i</span>
+              <div><h2>Advertencia del conjunto de datos</h2><ul id="warning-list"></ul></div>
+            </div>
+
+            <section id="empty-state" class="empty-state panel" aria-label="Sin resultados">
+              <div class="empty-illustration" aria-hidden="true">
+                <span class="empty-line line-one"></span><span class="empty-line line-two"></span><span class="empty-line line-three"></span>
+                <span class="empty-orbit"></span>
+              </div>
+              <p class="eyebrow">ANÁLISIS COMPARATIVO</p>
+              <h2>Tu análisis aparecerá aquí</h2>
+              <p>Los resultados se mostrarán después de una respuesta válida de la API. No se presentan datos de demostración.</p>
+            </section>
+
+            <div id="results" hidden>
+              <section class="metrics-section" aria-labelledby="metrics-title">
+                <div class="section-heading">
+                  <div><p class="eyebrow">RESUMEN DE DESEMPEÑO</p><h2 id="metrics-title">Métricas financieras</h2><p id="results-source-note" class="results-source-note" hidden></p></div>
+                  <div class="strategy-switch" role="group" aria-label="Destacar estrategia">
+                    <button type="button" class="strategy-option is-active" data-focus="both" aria-pressed="true">Comparar</button>
+                    <button type="button" class="strategy-option" data-focus="buy_and_hold" aria-pressed="false"><span class="legend-dot buy-dot"></span>Buy &amp; Hold</button>
+                    <button type="button" class="strategy-option" data-focus="sma_crossover" aria-pressed="false"><span class="legend-dot sma-dot"></span>SMA</button>
+                  </div>
+                </div>
+                <div class="metric-grid">
+                  <article class="metric-card panel"><p class="metric-name">Patrimonio final</p><div class="metric-values"><span data-final="buy_and_hold">—</span><span data-final="sma_crossover">—</span></div><div class="metric-labels"><span>Buy &amp; Hold</span><span>SMA</span></div></article>
+                  <article class="metric-card panel"><p class="metric-name">Rentabilidad acumulada</p><div class="metric-values"><span data-metric="cumulative_return" data-strategy="buy_and_hold">—</span><span data-metric="cumulative_return" data-strategy="sma_crossover">—</span></div><div class="metric-labels"><span>Buy &amp; Hold</span><span>SMA</span></div></article>
+                  <article class="metric-card panel"><p class="metric-name">Rentabilidad anualizada</p><div class="metric-values"><span data-metric="annualized_return" data-strategy="buy_and_hold">—</span><span data-metric="annualized_return" data-strategy="sma_crossover">—</span></div><div class="metric-labels"><span>Buy &amp; Hold</span><span>SMA</span></div></article>
+                  <article class="metric-card panel"><p class="metric-name">Volatilidad anualizada</p><div class="metric-values"><span data-metric="annualized_volatility" data-strategy="buy_and_hold">—</span><span data-metric="annualized_volatility" data-strategy="sma_crossover">—</span></div><div class="metric-labels"><span>Buy &amp; Hold</span><span>SMA</span></div></article>
+                  <article class="metric-card panel"><p class="metric-name">Drawdown máximo</p><div class="metric-values"><span data-metric="maximum_drawdown" data-strategy="buy_and_hold">—</span><span data-metric="maximum_drawdown" data-strategy="sma_crossover">—</span></div><div class="metric-labels"><span>Buy &amp; Hold</span><span>SMA</span></div></article>
+                </div>
+                <p id="metric-note" class="metric-note" hidden></p>
+              </section>
+
+              <section class="chart-section panel" aria-labelledby="chart-title">
+                <div class="section-heading chart-heading">
+                  <div><p class="eyebrow">EVOLUCIÓN DEL PATRIMONIO</p><h2 id="chart-title">Curvas de capital</h2></div>
+                  <div class="chart-legend"><span><i class="legend-line buy-line"></i>Buy &amp; Hold</span><span><i class="legend-line sma-line"></i>SMA</span></div>
+                </div>
+                <div class="chart-wrap"><canvas id="equity-chart" role="img" aria-label="Gráfico comparativo de las curvas de patrimonio"></canvas></div>
+                <div class="chart-footnote"><span id="chart-start">—</span><span>Valoración diaria a Close</span><span id="chart-end">—</span></div>
+              </section>
+
+              <section class="trades-section panel" aria-labelledby="trades-title">
+                <div class="section-heading trades-heading"><div><p class="eyebrow">ACTIVIDAD DE CARTERA</p><h2 id="trades-title">Operaciones ejecutadas</h2></div><span id="trade-count" class="count-badge">0</span></div>
+                <div class="table-scroll">
+                  <table>
+                    <thead><tr><th>Sesión</th><th>Estrategia</th><th>Operación</th><th class="numeric">Unidades</th><th class="numeric">Precio</th><th class="numeric">Comisión</th></tr></thead>
+                    <tbody id="trades-body"></tbody>
+                  </table>
+                  <p id="no-trades" class="no-trades" hidden>No hubo operaciones durante el período evaluado.</p>
+                </div>
+              </section>
+              <p class="disclaimer">Simulación histórica con fines educativos. Los resultados pasados no garantizan resultados futuros.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer class="footer"><span>QUANTLAB</span><span>Investigación cuantitativa · Datos históricos locales</span></footer>
+    </div>
+  </body>
+</html>

@@ -48,6 +48,48 @@ El importe, moneda y base por unidad se comprobarán contra una fuente oficial d
 
 En la ex-date se reconocerá un derecho de cobro por las unidades con derecho, separado del efectivo disponible. El derecho no será gastable. Solo se trasladará a efectivo disponible en la fecha de pago cuando esta se haya verificado. Si no se puede verificar, seguirá como dividendo por cobrar, incluso al cierre de la simulación. El traslado de cuenta por cobrar a efectivo no creará patrimonio adicional.
 
+### Conciliación comunicada de dividendos históricos de SPY (2020–2024)
+
+La siguiente conciliación fue comunicada por el usuario tras revisar el archivo oficial `spdr-etf-historical-distributions.xlsx` de State Street. Identifica el fondo State Street SPDR S&P 500 ETF Trust, ticker `SPY`, CUSIP `78462F103`. Según esos resultados comunicados, los 20 eventos positivos del CSV tienen fecha coincidente con el ex-date oficial y 19 importes coinciden al redondear a tres decimales.
+
+Los datos del CSV y sus metadatos sí fueron inspeccionados localmente. El archivo XLSX no está conservado en el proyecto y sus 20 filas no pudieron verificarse independientemente durante esta edición. Por lo tanto, las coincidencias con State Street de esta sección se registran como resultados comunicados, no como una comprobación propia. No se agregan importes oficiales de los otros 19 eventos, fechas de pago ni referencias de hoja o fila porque esos datos no están disponibles en el material revisado aquí.
+
+La conciliación comunicada corresponde a esta instantánea local:
+
+- CSV: `data/raw/SPY_2020-01-01_2025-01-01.csv`
+- Rango solicitado: `[2020-01-01, 2025-01-01)`
+- Proveedor: Yahoo Finance mediante yfinance `1.7.0`
+- Parámetros relevantes: `auto_adjust=false`, `actions=true`, `repair=false`
+- SHA-256 del CSV: `2230bb3cf92223271c8207953b6cabd7bc004550d8026adda75c1b2bd4f0efa5`
+- Fuente oficial indicada: [State Street SPDR Historical Distributions](https://www.ssga.com/us/en/individual/resources/documents/etf-dividend-distributions), archivo `spdr-etf-historical-distributions.xlsx`
+
+| Fecha del CSV | `Dividends` observado en CSV (USD/unidad, base oficial pendiente de trazabilidad) | Resultado de ex-date comunicado | Resultado del importe comunicado |
+|---|---:|---|---|
+| 2020-03-20 | 1.406 | Coincide | Coincide a tres decimales |
+| 2020-06-19 | 1.366 | Coincide | Coincide a tres decimales |
+| 2020-09-18 | 1.339 | Coincide | Coincide a tres decimales |
+| 2020-12-18 | 1.580 | Coincide | Coincide a tres decimales |
+| 2021-03-19 | 1.278 | Coincide | Coincide a tres decimales |
+| 2021-06-18 | 1.376 | Coincide | Coincide a tres decimales |
+| 2021-09-17 | 1.428 | Coincide | Coincide a tres decimales |
+| 2021-12-17 | 1.633 | Coincide | Discrepancia: State Street comunica `1.636431 USD/acción`; diferencia (oficial menos CSV): `0.003431 USD/acción` |
+| 2022-03-18 | 1.366 | Coincide | Coincide a tres decimales |
+| 2022-06-17 | 1.577 | Coincide | Coincide a tres decimales |
+| 2022-09-16 | 1.596 | Coincide | Coincide a tres decimales |
+| 2022-12-16 | 1.781 | Coincide | Coincide a tres decimales |
+| 2023-03-17 | 1.506 | Coincide | Coincide a tres decimales |
+| 2023-06-16 | 1.638 | Coincide | Coincide a tres decimales |
+| 2023-09-15 | 1.583 | Coincide | Coincide a tres decimales |
+| 2023-12-15 | 1.906 | Coincide | Coincide a tres decimales |
+| 2024-03-15 | 1.595 | Coincide | Coincide a tres decimales |
+| 2024-06-21 | 1.759 | Coincide | Coincide a tres decimales |
+| 2024-09-20 | 1.746 | Coincide | Coincide a tres decimales |
+| 2024-12-20 | 1.966 | Coincide | Coincide a tres decimales |
+
+La causa de la discrepancia del 2021-12-17 no está determinada. El valor de Yahoo no se reemplaza ni se ajusta automáticamente. La diferencia mantiene bloqueada la contabilización de dividendos reales en simulaciones. La fecha de pago no queda conciliada por los resultados aquí comunicados y debe verificarse por separado antes de convertir una cuenta por cobrar en efectivo.
+
+Para completar la trazabilidad reproducible, se debe conservar una copia inmutable del XLSX revisado y registrar su SHA-256, fecha de obtención y las referencias de hoja/fila de los 20 eventos. Hasta entonces, la tabla documenta los resultados comunicados y los valores observados localmente en el CSV, pero no constituye una verificación independiente de las filas de State Street.
+
 ### Señales, período evaluado y operaciones
 
 La SMA20 y SMA50 se calcularán con cierres disponibles hasta la sesión en curso. Una señal determinada al cierre de la sesión `t` solo podrá ejecutarse en la apertura de la siguiente sesión bursátil válida. Ninguna señal usará el `Open` de la sesión en la que se calcula.
@@ -102,8 +144,8 @@ Fuentes oficiales consultadas:
 1. La compatibilidad de `yfinance==1.7.0` con la versión de Python y las dependencias que QUANTLAB vaya a fijar. La versión no se considera aprobada para el entorno hasta verificarlo.
 2. Que las barras OHLC de SPY para el rango real estén ajustadas por splits de forma correcta y uniforme.
 3. Que las fechas y ratios de `Stock Splits`, la escala de precios y la escala de unidades puedan reconciliarse.
-4. Que el importe de `Dividends` esté en la moneda y base por unidad esperadas, compatibles con los precios y las unidades del ledger.
-5. Que cada fecha de pago y término de distribución pueda verificarse mediante una fuente primaria del fondo o de mercado.
+4. La conciliación comunicada atribuye a los 20 eventos fechas ex-dividendo coincidentes y a 19 importes coincidencia al redondear a tres decimales. La discrepancia del 2021-12-17 (CSV `1.633`; State Street comunicado `1.636431 USD/acción`) permanece sin resolver. La moneda y base por unidad de cada fila y los importes oficiales exactos de los otros 19 eventos requieren trazabilidad directa al XLSX archivado.
+5. Que cada fecha de pago y término de distribución pueda verificarse mediante una fuente primaria del fondo o de mercado. La coincidencia de ex-dates comunicada no verifica las fechas de pago.
 6. Que fechas, zona horaria y calendario de sesiones devueltos sean consistentes con las sesiones de mercado del rango seleccionado.
 7. Que la respuesta histórica de Yahoo no cambie en descargas futuras. El CSV preservado y su hash identifican la instantánea usada, pero no aseguran que una descarga nueva sea idéntica.
 
@@ -149,6 +191,9 @@ Una fila NaN o cualquier relación inválida bloquea el conjunto. Las diferencia
 ### Pruebas de aceptación de dividendos
 
 - Para cada distribución real, comparar ex-date, fecha de pago, importe por unidad y moneda con documentación primaria del fondo o fuente de mercado aceptada.
+- La conciliación de SPY se referencia a la instantánea CSV identificada por rango y SHA-256, y al registro oficial por fondo, ticker `SPY` y CUSIP `78462F103`. Una coincidencia reportada pero no trazable directamente al archivo oficial se identifica como comunicada, no como verificación independiente.
+- Un importe discrepante, como el evento 2021-12-17, no se reemplaza ni ajusta automáticamente y bloquea la simulación con dividendos hasta que la diferencia se resuelva y documente con la fuente primaria.
+- La fecha de pago se valida por separado del ex-date; no se infiere a partir de la fecha del registro en Yahoo Finance.
 - Comprobar la base por unidad y su compatibilidad con las unidades del activo usadas en el ledger.
 - En fixture, una posición elegible genera derecho en ex-date; vender después de esa fecha no elimina ese derecho; comprar en o después de ex-date no genera el derecho de ese evento.
 - Antes de la fecha de pago verificada, el monto permanece en dividendos por cobrar y no puede financiar operaciones. En fecha de pago, se traslada de cuenta por cobrar a efectivo sin cambiar el patrimonio total.
