@@ -1,179 +1,213 @@
 # QUANTLAB
 
-QUANTLAB es un MVP académico para explorar precios históricos de ETF y comparar
-dos estrategias de inversión bajo parámetros comunes. La aplicación separa el
-análisis descriptivo de datos locales de la comparación experimental con datos
-sintéticos.
+QUANTLAB es un laboratorio web para explorar estrategias de inversión y comparar su comportamiento. La idea surgió de querer construir una aplicación en la que se pudieran visualizar datos de mercado, configurar estrategias y entender cómo cambian los resultados al modificar algunos parámetros.
 
-## Objetivo y alcance
+Para el MVP me concentré en dos funcionalidades: el análisis descriptivo de precios históricos de ETF y la comparación experimental entre las estrategias Buy & Hold y cruce de medias móviles (SMA).
 
-El MVP permite consultar el catálogo, analizar descriptivamente SPY y QQQ,
-visualizar sus precios de cierre y ejecutar comparaciones experimentales entre
-Buy & Hold y SMA20/SMA50. Las simulaciones experimentales usan escenarios
-sintéticos deterministas. No se ejecutan operaciones financieras reales ni se
-emiten recomendaciones de inversión.
+No intenté construir una plataforma de inversión completa. Quería tener una aplicación funcional, con una interfaz que permitiera interactuar con los datos y un backend que se encargara de procesarlos y ejecutar las estrategias.
 
-## Funcionalidades
+## Qué decidí
 
-- Catálogo de SPY, QQQ, IWM, TLT y GLD con estado y capacidades.
-- Resumen de precios `Close` y gráfico histórico descriptivo para SPY y QQQ.
-- Configuración de capital, comisión, sesiones, escenario y ventanas SMA en
-  modo experimental.
-- Curvas de patrimonio, métricas financieras y tabla de operaciones para las
-  dos estrategias.
-- API HTTP con validación de parámetros y datos.
+**Separar el análisis histórico de la comparación experimental.** Esta fue una de las decisiones más importantes del proyecto. Para el análisis histórico utilizo datos de SPY y QQQ descargados de Yahoo Finance y almacenados localmente. En cambio, para experimentar con las estrategias genero datos sintéticos desde Python. Así puedo probar diferentes escenarios sin presentar los resultados artificiales como si fueran rendimientos históricos reales.
 
-En el modo experimental, el ETF seleccionado solo es una referencia visual:
-la fuente utilizada para comparar es sintética y depende del escenario
-seleccionado.
+**Empezar con HTML, CSS y JavaScript.** Para el frontend preferí trabajar con las tecnologías web directamente, sin incorporar un framework adicional. Esto me permitió concentrarme en la interfaz, los formularios, los gráficos y la comunicación con el backend, sin añadir un proceso de compilación.
 
-## Arquitectura y tecnologías
+**Usar FastAPI para el backend.** Elegí Python porque es el lenguaje que utilizo para trabajar con datos y desarrollar modelos. FastAPI me permite exponer las funcionalidades mediante una API y mantener separada la lógica de procesamiento de la interfaz.
 
-- **Frontend:** HTML, CSS y JavaScript nativo; Canvas para gráficos y `fetch`
-  para consumir la API.
-- **Backend:** Python 3.12, FastAPI y esquemas Pydantic.
-- **Cálculos y datos:** pandas y NumPy; yfinance para adquisición controlada.
-- **Ejecución local:** uv/Uvicorn para backend y el servidor HTTP estándar de
-  Python para el frontend.
-- **Pruebas:** pytest para backend; Node.js `node:test` y `node --check` para
-  frontend.
+**Conservar los datos históricos en archivos CSV.** No incorporé una base de datos en esta primera versión. Los archivos CSV son suficientes para conservar los precios que utilizo en el análisis descriptivo, mientras que los metadatos en JSON permiten registrar información de las descargas y comprobar la integridad de los archivos.
 
-El frontend consume el backend FastAPI. El backend administra las ubicaciones
-locales de los datasets, valida los datos y delega los cálculos al motor
-financiero existente. El navegador no proporciona rutas de archivo.
+**No habilitar todavía el backtesting histórico.** Aunque ya tengo datos históricos disponibles, decidí mantener bloqueada la ejecución de estrategias sobre esos datos mientras haya eventos corporativos pendientes de conciliación. Para demostrar el funcionamiento de las estrategias utilizo el modo experimental.
 
-## Estructura
+**Mantener el alcance del MVP controlado.** Preferí completar el flujo principal de la aplicación antes de incorporar funcionalidades como el historial persistente de experimentos o una base de datos SQLite.
 
-```text
-backend/       API, catálogo, adquisición, motor financiero y generador sintético
-data/raw/      CSV y metadatos históricos locales (ignorados por Git)
-docs/          especificación, plan, contrato de datos y guía de API
-frontend/      interfaz estática
-tests/         pruebas backend y frontend
-pyproject.toml dependencias y configuración pytest
-uv.lock        resolución fijada de dependencias
-```
+## Cómo está construido
 
-## Requisitos y ejecución local
+El proyecto está dividido en dos partes principales.
 
-Requiere Python 3.12, uv y Node.js para ejecutar la prueba de frontend. Desde
-esta carpeta, sincroniza el entorno con el archivo de bloqueo:
+El frontend contiene los formularios, las tarjetas de resultados, los gráficos y las tablas de operaciones. Desde allí se selecciona el modo de análisis, se consultan los activos disponibles y se ejecutan las comparaciones experimentales.
+
+El backend está desarrollado con FastAPI. Recibe las solicitudes del frontend, consulta el catálogo de activos, carga los datos históricos cuando corresponde y ejecuta las funciones de análisis y comparación.
+
+Dentro del backend separé las responsabilidades para no concentrar toda la lógica en un único archivo:
+
+- `data_loader.py` se encarga de descargar, guardar y validar los datos históricos.
+- `dataset_catalog.py` define los activos disponibles y las capacidades habilitadas para cada uno.
+- `metrics.py` calcula las métricas de desempeño.
+- `portfolio.py` administra el efectivo, las posiciones y las operaciones.
+- `strategies.py` implementa Buy & Hold y el cruce de medias móviles.
+- `comparison.py` coordina la ejecución de ambas estrategias bajo los mismos parámetros.
+- `synthetic_data.py` genera los escenarios experimentales.
+
+También separé los esquemas de la API, la interfaz web y las pruebas automatizadas.
+
+La estructura me permitió modificar funcionalidades concretas sin tener que reescribir toda la aplicación cada vez que aparecía un problema.
+
+## Cómo funciona la aplicación
+
+### Análisis histórico
+
+La aplicación permite seleccionar SPY y QQQ, consultar sus estadísticas descriptivas y visualizar la evolución histórica del precio de cierre.
+
+Los datos se obtuvieron de Yahoo Finance y se guardaron localmente para poder trabajar con un conjunto estable durante el desarrollo.
+
+El análisis muestra el número de sesiones, los precios inicial y final, la variación del precio, la volatilidad y el drawdown. También permite seleccionar un período para visualizar la serie histórica.
+
+Estas estadísticas describen el comportamiento del precio de cierre. No deben interpretarse como la rentabilidad total de una inversión, porque no incorporan necesariamente todos los efectos de los dividendos y otros eventos corporativos.
+
+Los activos IWM, TLT y GLD aparecen en el catálogo, pero todavía no tienen datos históricos locales validados para habilitar el análisis correspondiente.
+
+### Comparación experimental
+
+En este modo se pueden seleccionar tres escenarios sintéticos:
+
+- Tendencia alcista.
+- Mercado lateral.
+- Alta volatilidad.
+
+También se puede configurar el capital inicial, la comisión, el número de sesiones y las ventanas de las medias móviles.
+
+La aplicación ejecuta Buy & Hold y SMA sobre el mismo escenario y presenta las métricas, las curvas de patrimonio y las operaciones generadas por cada estrategia.
+
+El selector de ETF permanece visible en la interfaz, pero en este modo sirve como referencia: **la comparación experimental utiliza datos sintéticos y no los precios históricos del ETF seleccionado**.
+
+Esto permite demostrar el funcionamiento del motor de estrategias sin confundir una simulación artificial con un backtest sobre el mercado real.
+
+## Qué tuve que resolver
+
+### El problema del efectivo negativo
+
+Durante las pruebas de la comparación experimental apareció un error que impedía completar algunas ejecuciones.
+
+La causa era una diferencia extremadamente pequeña de precisión numérica. Al calcular cuántas unidades comprar, el resultado parecía caber en el efectivo disponible, pero al calcular nuevamente el costo y la comisión se producía una diferencia mínima que hacía que la compra superara el saldo disponible.
+
+El problema no estaba en la señal de la estrategia, sino en cómo se calculaba la cantidad que se podía comprar.
+
+Ajusté el cálculo de las unidades para comprobar el costo con las mismas operaciones que utiliza el libro de operaciones. El ledger conserva sus validaciones y sigue impidiendo que una compra genere efectivo negativo.
+
+Después añadí pruebas de regresión para verificar que las estrategias pudieran ejecutarse con los parámetros utilizados en los tres escenarios.
+
+### Las dos estrategias daban exactamente el mismo resultado
+
+En el escenario sintético de tendencia alcista, Buy & Hold y SMA mostraban las mismas métricas y las curvas se superponían.
+
+Al revisar las operaciones, encontré que ambas estrategias compraban en la misma apertura y mantenían la misma posición hasta el final. Por eso sus resultados coincidían.
+
+No era un error de visualización. Se debía al comportamiento de la serie sintética y al momento en que se generaba la señal SMA.
+
+Conservé la lógica de las estrategias y utilicé el caso para comprobar que el resultado mostrado por la interfaz coincidiera con las operaciones ejecutadas por el backend.
+
+### El ETF seleccionado no era el que generaba los resultados experimentales
+
+Al cambiar del análisis histórico a la comparación experimental, la interfaz seguía mostrando el ticker del ETF seleccionado. Esto podía hacer pensar que la comparación se estaba realizando con los precios de ese activo.
+
+Para evitar esa confusión, ajusté la interfaz para distinguir la referencia del ETF de la fuente de datos utilizada en el experimento. También añadí una explicación de que los escenarios son sintéticos e independientes de los precios históricos.
+
+Aproveché el cambio para eliminar las alertas amarillas que aparecían en los resultados experimentales y sustituirlas por una nota más discreta.
+
+### La API y el frontend debían manejar los errores
+
+También trabajé en el comportamiento de la aplicación cuando una solicitud no puede completarse.
+
+El frontend debe distinguir entre parámetros inválidos, activos que no están disponibles, comparaciones bloqueadas y problemas de conexión. En esos casos no debe presentar resultados anteriores como si correspondieran a la solicitud actual.
+
+Para comprobar estos comportamientos incorporé pruebas de la API y del frontend.
+
+## Los datos históricos y sus limitaciones
+
+Uno de los aprendizajes del proyecto fue que disponer de datos históricos no significa que estén listos para evaluar una estrategia de inversión.
+
+Los archivos de SPY y QQQ contienen precios y eventos corporativos. Antes de utilizar esos datos para un backtest hay que comprobar que los eventos estén correctamente identificados y que su tratamiento sea coherente con el cálculo del patrimonio.
+
+Durante la revisión encontré aspectos pendientes en la conciliación de dividendos. Por eso mantuve habilitadas las estadísticas descriptivas y los gráficos de precios, pero bloqueé las comparaciones históricas.
+
+Esta separación es intencional. Prefiero mostrar una limitación explícita antes que presentar resultados que puedan interpretarse como una evaluación financiera validada.
+
+La siguiente etapa sería completar la validación de los eventos corporativos y, después, habilitar el backtesting histórico.
+
+## Cómo trabajé con las pruebas
+
+Al principio era importante comprobar que las funcionalidades se vieran bien en el navegador, pero eso no era suficiente para validar la lógica del proyecto.
+
+Por eso fui incorporando pruebas automatizadas para las métricas, el libro de operaciones, las estrategias, la comparación, la carga de datos, el catálogo y los endpoints de la API.
+
+También añadí pruebas para algunos problemas que aparecieron durante el desarrollo, como la precisión de las compras y el manejo de solicitudes experimentales.
+
+La idea fue comprobar tanto los resultados esperados como los casos en los que la aplicación debe rechazar una operación o devolver un error controlado.
+
+## Qué queda pendiente
+
+El MVP permite consultar estadísticas históricas de SPY y QQQ, visualizar sus precios de cierre y comparar las dos estrategias sobre datos sintéticos.
+
+Sin embargo, todavía hay funcionalidades que no forman parte de esta versión:
+
+- Habilitar el backtesting histórico después de completar la conciliación de los eventos corporativos.
+- Incorporar y validar datos históricos de IWM, TLT y GLD.
+- Guardar los experimentos para que el usuario pueda consultar comparaciones anteriores.
+- Evaluar el uso de SQLite para persistir parámetros, métricas y operaciones.
+- Incorporar nuevas estrategias y escenarios de experimentación.
+
+No considero que estas limitaciones impidan presentar el MVP. La aplicación ya permite recorrer el flujo principal, ejecutar comparaciones experimentales y visualizar los resultados, dejando explícito qué funcionalidades están disponibles y cuáles requieren trabajo adicional.
+
+## Cómo ejecutar el proyecto
+
+### Requisitos
+
+- Python 3.12.
+- `uv` para gestionar el entorno y las dependencias.
+- Node.js para ejecutar las pruebas del frontend.
+- Conexión a internet para descargar dependencias cuando sea necesario.
+
+Los comandos deben ejecutarse desde la carpeta `tp-final`.
+
+### Iniciar el backend
 
 ```powershell
 uv sync
-```
-
-Abre dos terminales en la raíz de QUANTLAB.
-
-Terminal 1 — API:
-
-```powershell
 uv run uvicorn backend.api:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Terminal 2 — interfaz:
+### Iniciar el frontend
+
+En otra terminal:
 
 ```powershell
 uv run python -m http.server 5500 --bind localhost --directory frontend
 ```
 
-Abre `http://localhost:5500`. CORS está restringido a ese origen. Para las
-rutas y formatos de respuesta, consulta [`docs/api.md`](docs/api.md).
+Después, abre en el navegador:
 
-## Pruebas
+```text
+http://localhost:5500
+```
 
-Suite backend:
+### Ejecutar las pruebas
+
+Pruebas del backend:
 
 ```powershell
 uv run pytest -v
 ```
 
-Prueba de frontend y comprobación sintáctica:
+Pruebas del frontend:
 
 ```powershell
 node --test tests/frontend_409.test.cjs
+```
+
+Comprobación de sintaxis de JavaScript:
+
+```powershell
 node --check frontend/app.js
 ```
 
-Las pruebas backend utilizan datos sintéticos controlados y no necesitan
-descargar datos de mercado.
+## Tecnologías utilizadas
 
-## Limitaciones del MVP
-
-- Los escenarios experimentales usan datos sintéticos y no representan
-  rentabilidades históricas reales.
-- SPY y QQQ están habilitados para análisis descriptivo, pero su simulación
-  histórica continúa bloqueada mientras no se procesen y reconcilien sus
-  eventos corporativos.
-- La conciliación de dividendos reales permanece pendiente, incluida una
-  discrepancia comunicada para SPY; véase [`docs/data_contract.md`](docs/data_contract.md).
-- IWM, TLT y GLD no tienen datos locales validados para las funcionalidades
-  que requieren esos datos.
-- No hay persistencia SQLite ni historial persistente de experimentos.
-- El MVP no modela impuestos, retenciones, spread, deslizamiento, liquidez ni
-  costos de custodia.
-
-La variación descriptiva de `Close` no incluye distribuciones y no debe
-interpretarse como rentabilidad total. Los resultados pasados tampoco
-garantizan resultados futuros.
-
-
-## Qué decidí yo
-
-Separar el análisis histórico de la comparación experimental. Quería que QUANTLAB permitiera explorar el comportamiento de activos financieros y, por otro lado, probar estrategias de inversión. Al principio podía parecer que ambas cosas eran similares, pero tienen objetivos diferentes. El análisis histórico utiliza datos de mercado, mientras que la comparación experimental utiliza escenarios sintéticos generados por la aplicación. Por eso decidí mantenerlos separados y mostrar claramente qué tipo de datos se está utilizando en cada caso.
-
-Usar Python para la lógica y JavaScript para la interfaz. Elegí FastAPI para el backend porque me permite construir una API con una estructura clara y aprovechar Python para trabajar con los datos, implementar las estrategias y calcular las métricas. Para el frontend utilicé HTML, CSS y JavaScript, sin incorporar un framework adicional. De esta manera pude concentrarme en la funcionalidad de la aplicación sin añadir complejidad innecesaria.
-
-Mantener una API entre el frontend y el backend. La interfaz no accede directamente a los archivos históricos ni calcula por su cuenta qué activos están habilitados. Consulta los endpoints del backend, que se encargan de validar las solicitudes y devolver la información correspondiente. Esto también permite mantener las reglas de disponibilidad en un solo lugar.
-
-Empezar con dos estrategias conocidas. Para la comparación experimental elegí Buy & Hold y el cruce de medias móviles simples (SMA). Mi objetivo inicial no era construir un sistema que encontrara automáticamente la mejor estrategia, sino una aplicación que permitiera configurar parámetros, ejecutar ambas alternativas y comparar sus resultados. Por eso dejé el aprendizaje por refuerzo y otras estrategias para una etapa posterior.
-
-Separar los datos históricos de los sintéticos. Para experimentar con diferentes comportamientos del mercado implementé tres escenarios: tendencia alcista, mercado lateral y alta volatilidad. Estos escenarios permiten probar la aplicación sin depender de que todos los activos tengan datos históricos habilitados. También evitan presentar los resultados experimentales como si fueran rentabilidades reales del mercado.
-
-No habilitar el backtesting histórico mientras haya problemas pendientes con los datos. Aunque tengo archivos históricos de SPY y QQQ, decidí mantener bloqueadas las simulaciones hasta resolver la conciliación de sus eventos corporativos. Por ahora puedo consultar estadísticas descriptivas y visualizar los precios de cierre, pero no presentar los resultados de una estrategia como si estuvieran completamente validados.
-
-## Cómo organicé el proyecto
-
-Separé el código por responsabilidades para que cada parte tuviera una función concreta.
-
-backend/: contiene la API, la carga de datos, las estrategias, las métricas y la lógica de las operaciones.
-frontend/: contiene la interfaz, los formularios, los gráficos y la interacción con la API.
-tests/: reúne las pruebas automatizadas del backend y del frontend.
-docs/: contiene la especificación, el plan de trabajo, el contrato de datos y la documentación de la API.
-data/: almacena los datos históricos locales y sus metadatos.
-
-Esta organización me permite trabajar en una parte sin tener que modificar toda la aplicación. Por ejemplo, puedo cambiar la presentación de un gráfico sin alterar las reglas con las que se ejecutan las estrategias.
-
-También separé el análisis descriptivo de la comparación de estrategias. Las estadísticas de precios no deben confundirse con las métricas obtenidas al simular una inversión, así que cada funcionalidad tiene su propio flujo de consulta y presentación.
-
-## Cómo trabajé con la IA
-
-Antes de implementar cada funcionalidad, intenté definir qué debía hacer, qué archivos podían intervenir y qué condiciones tenía que respetar. Utilicé ChatGPT para discutir decisiones de arquitectura, entender conceptos y preparar instrucciones para Codex. Después utilicé Codex para inspeccionar el código, implementar los cambios y ejecutar las pruebas correspondientes.
-
-No trabajé con un único prompt para construir toda la aplicación. Fui avanzando por partes: primero la lógica de las estrategias y el manejo del portafolio, después la API, el catálogo de activos, las comparaciones experimentales y finalmente las visualizaciones del frontend.
-
-Cuando aparecía un problema, procuraba identificar su causa antes de pedir otro cambio. Por ejemplo, cuando una compra fallaba por una diferencia muy pequeña entre el efectivo disponible y el costo calculado, revisamos las operaciones involucradas y ajustamos el cálculo de las unidades sin eliminar la validación del ledger.
-
-También fui limitando el alcance de cada iteración. Cuando decidí añadir el gráfico histórico, pedí que se implementara sin modificar los archivos de datos, las estrategias ni el bloqueo del backtesting. Así pude incorporar una funcionalidad nueva sin tener que reconstruir lo que ya funcionaba.
-
-Las pruebas automatizadas fueron importantes durante este proceso. En lugar de depender exclusivamente de abrir la aplicación y probarla manualmente, incorporé pruebas para la API, las estrategias, las métricas, el manejo de operaciones y las respuestas del frontend. Las pruebas no sustituyen todas las comprobaciones manuales, pero permiten detectar regresiones cuando se modifica el código.
-
-## Qué problemas y decisiones fueron apareciendo
-
-Las estrategias podían producir resultados idénticos. Al comparar Buy & Hold y SMA en el escenario alcista, ambas mostraban las mismas curvas y rentabilidades. Investigamos el comportamiento y encontramos que compraban en la misma apertura y mantenían la posición hasta el final. En ese escenario, los resultados idénticos tenían una explicación en las decisiones de las estrategias, por lo que no era necesario modificar las métricas para forzar diferencias.
-
-La comparación experimental necesitaba una identificación más clara. Inicialmente, el ETF seleccionado podía generar confusión al cambiar de modo. Ajusté la interfaz para mantener visible el activo de referencia y distinguirlo de la fuente de datos sintéticos. Así, seleccionar QQQ en el modo experimental no significa que la simulación utilice sus precios históricos.
-
-El análisis histórico necesitaba una visualización propia. Las estadísticas descriptivas permitían consultar los precios iniciales y finales, la variación, la volatilidad y el drawdown, pero faltaba una forma directa de observar la evolución temporal. Por eso añadí un endpoint para consultar las series de precios y un gráfico independiente del gráfico de patrimonio de las estrategias.
-
-Los datos históricos no estaban listos para simular inversiones. Durante la revisión de SPY y QQQ aparecieron eventos corporativos que todavía necesitaban conciliación. En vez de habilitar el backtesting solo porque los archivos estuvieran disponibles, mantuve la restricción y limité su uso al análisis descriptivo. Esta decisión también quedó documentada para evitar confundir las capacidades actuales con las que podrían incorporarse en el futuro.
-
-La interfaz necesitaba diferenciar mejor sus dos modos. Fui ajustando los indicadores, los selectores y los mensajes para que el usuario pudiera identificar el activo, el escenario y la fuente de datos sin tener que conocer la implementación interna. También añadí estados para solicitudes rechazadas y errores de conexión.
-
-## Qué quedó implementado y qué falta
-
-El MVP permite consultar el catálogo de activos, analizar descriptivamente SPY y QQQ, visualizar sus precios de cierre y ejecutar comparaciones experimentales entre Buy & Hold y SMA en tres escenarios sintéticos. La interfaz presenta métricas, curvas de patrimonio y operaciones, y el backend ofrece endpoints para las funcionalidades disponibles.
-
-No implementé todavía el historial persistente de experimentos ni la integración de aprendizaje por refuerzo. Tampoco habilité el backtesting histórico de SPY y QQQ, porque sigue pendiente la conciliación de eventos corporativos. IWM, TLT y GLD permanecen en el catálogo, pero no cuentan con datos locales validados para las funcionalidades que los requieren.
-
-Considero que estas limitaciones forman parte del alcance actual y deben quedar explícitas. El objetivo de esta versión fue construir una aplicación funcional, con una separación clara entre componentes, una interfaz que permita explorar los resultados y pruebas que ayuden a mantener el comportamiento esperado.
+- **Python:** procesamiento de datos, métricas y estrategias.
+- **FastAPI:** API del backend.
+- **HTML, CSS y JavaScript:** interfaz web.
+- **Canvas:** representación de las series y curvas en los gráficos.
+- **Pandas y NumPy:** herramientas para el trabajo con datos.
+- **pytest:** pruebas automatizadas del backend.
+- **Node.js:** ejecución de las pruebas del frontend.
+- **uv:** gestión del entorno y las dependencias.
+- **Yahoo Finance:** fuente de los datos históricos.
